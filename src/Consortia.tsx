@@ -35,19 +35,6 @@ import * as yjs from 'yjs'
 
 type Consortium = any
 
-function bytesToHex(byteArray: Uint8Array) {
-  return Array.prototype.map.call(byteArray, function(byte) {
-    return ('0' + (byte & 0xFF).toString(16)).slice(-2);
-  }).join('');
-}
-function hexToBytes(hexString: string) {
-  var result = [];
-  for (var i = 0; i < hexString.length; i += 2) {
-    result.push(parseInt(hexString.substr(i, 2), 16));
-  }
-  return result;
-}
-
 const Consortia = (props: {
     consortia: any;
     nostrKeys: NostrKey[];
@@ -59,10 +46,9 @@ const Consortia = (props: {
     // eslint-disable-next-line no-unused-vars
     removeConsortium: (consortium?: Consortium) => void
   }) => {
-    // console.log(props.consortia)
-    // console.log(props.consortia)
     // const [trainLabelValues, setTrainLabelValues] = createSignal([]);
   const [signerNpub, setSignerNpub] = createSignal('');
+  const [memberPublicKeys, setMemberPublicKeys] =  createSignal([])
   const filter = createFilter({ sensitivity: "base" });
   const [optionsEncryptionKeys, setOptionsEncryptionKeys] = createSignal<string[]>([]);
   const [optionsNpub, setOptionsNpub] = createSignal<string[]>([]);
@@ -90,11 +76,23 @@ const Consortia = (props: {
     setOptionsNpub(optionsNpub()?.filter(option => !filter.contains(option, value)));
   };
 
+  const onOpenChangeEncryptionKeys = (isOpen: boolean, triggerMode?: Combobox.ComboboxTriggerMode) => {
+    // Show all options on ArrowDown/ArrowUp and button click.
+    if (isOpen && triggerMode === "manual") {
+      setOptionsEncryptionKeys(props.encryptionKeys.map(encryptionKey => encryptionKey.label || encryptionKey.publicKey))
+    }
+  };
+  const onInputChangeEncryptionKeys = (value: string) => {
+    setOptionsEncryptionKeys(optionsEncryptionKeys()?.filter(option => filter.contains(option, value)));
+  };
+
+
+
   const group = createFormGroup({
     id: createFormControl(''),
     label: createFormControl(''),
     signerNpub: createFormControl(''),
-    nostrMessageKind: createFormControl(['']),
+    nostrMessageKind: createFormControl(''),
     memberPublicKeys: createFormControl([''])
     
   });
@@ -136,44 +134,20 @@ const Consortia = (props: {
       if (newConsortiumObj.label === '') {
         return
       }
-      console.log(newConsortiumObj)
+      newConsortiumObj.memberPublicKeys = memberPublicKeys()
+
       props.putConsortium(newConsortiumObj)
     })
     group.setValue(consortiumTemplate)
     setSignerNpub('')
-    // setTrainLabelValues([]) 
+    setMemberPublicKeys([])
   };
-
-//   const handleToggleChecked = (id: string, newVal: boolean) => {
-//     const valuesForSelectedFeed = props.consortia
-//     .find(feedEdit => feedEdit['id'] === id)
-//     const newValueObj = (Object.assign(
-//       {
-//         id: '',
-//         npub: '',
-//         trainLabels: []
-//       },
-//       {
-//         ...valuesForSelectedFeed
-//       },
-//       {checked: newVal}
-//     ))
-//     group.setValue (newValueObj)
-//     setTrainLabelValues(valuesForSelectedFeed?.trainLabels as string[])
-//     setSignerNpub(valuesForSelectedFeed?.npub as string)
-//     newValueObj.trainLabels = trainLabelValues()
-//     newValueObj.npub = signerNpub()
-//     if (newValueObj.id === '') {
-//       return
-//     }
-//     const newClone = structuredClone(newValueObj)
-//     props.putFeed(newClone)
-//   }
 
   const handleClickConsortium = (label: string) => {
     // setTrainLabelValues([])
     setOptionsNpub([])
     setSignerNpub('')
+    setOptionsEncryptionKeys([])
     const valuesForSelectedConsortium = props.consortia
       .find((consortiumEdit: any) => consortiumEdit['label'] === label)
     group.setValue(Object.assign({
@@ -184,10 +158,12 @@ const Consortia = (props: {
       }, valuesForSelectedConsortium))
     // setTrainLabelValues(valuesForSelectedFeed?.trainLabels as string[] || [''])
     setSignerNpub(valuesForSelectedConsortium?.signerNpub as string || '')
+    setMemberPublicKeys(valuesForSelectedConsortium?.memberPublicKeys)
   }
   const handleClickCreateRoom = async () => {
-    console.log('you clicked create room')
-    const signerNSec = props.nostrKeys.find(nostrKey => nostrKey.publicKey == signerNpub())?.secretKey
+    const signerNSec = props.nostrKeys.find(nostrKey => {
+      return nostrKey.label || nostrKey.publicKey === signerNpub() 
+    })?.secretKey
     if (!signerNSec) {
       return
     }
@@ -206,7 +182,6 @@ const Consortia = (props: {
     ndkOpts.signer = skSigner
     ndkOpts.explicitRelayUrls = props.nostrRelays.map((nostrRelay => nostrRelay.id))
     ndkOpts.activeUser = skSigner.user()
-    console.log(ndkOpts)
     const roomNdk = new NDK(ndkOpts)
     await roomNdk.connect()
     // const receivers = getReceiverPublicKeys()
@@ -221,7 +196,6 @@ const Consortia = (props: {
         getNostrMessageKind(),
         encrypt
     )
-    console.log(nostrCRDTCreateEventId)
     group.patchValue({id: `${nostrCRDTCreateEventId}`});
   }
 
@@ -230,7 +204,7 @@ const Consortia = (props: {
       <PageHeader>Consortia</PageHeader>
       <form onSubmit={onSubmit}>
         <label>Nostr Room Event ID
-          <TextInput name="id" control={group.controls.id} />
+          <TextInput testid="consortium-id" name="consortium-id" control={group.controls.id} />
         </label>
         <label>Label
           <TextInput name="label" control={group.controls.label} />
@@ -297,17 +271,15 @@ const Consortia = (props: {
       </Combobox.Portal>
       </Combobox.Root>
 
-
-
       <div />
 
       <Combobox.Root<string[]>
         multiple={true}
         options={props.encryptionKeys.map((encryptionKey: {label?: string, publicKey: string}) => encryptionKey.label || encryptionKey.publicKey)}
-        value={optionsEncryptionKeys()}
-        onChange={setOptionsEncryptionKeys}
-        onInputChange={onInputChangeNpub}
-        onOpenChange={onOpenChangeNpub}
+        value={memberPublicKeys()}
+        onChange={setMemberPublicKeys}
+        onInputChange={onInputChangeEncryptionKeys}
+        onOpenChange={onOpenChangeEncryptionKeys}
         placeholder="click label to remove..."
         itemComponent={props => (
           <Combobox.Item item={props.item} class='combobox__item w-200px'>
@@ -327,11 +299,9 @@ const Consortia = (props: {
             <Combobox.Trigger class='border-none bg-transparent align-middle text-3xl transition-all hover-text-white hover:bg-black rounded-full'>
               &nbsp;member public keys&nbsp;
             </Combobox.Trigger>
-            <div class='flex flex-row bg-white '>
+            <div>
               <For each={state.selectedOptions()}>
                 {option => {
-                  let nostrSecretKey = generatePrivateKey()
-                  const npub = nip19.npubEncode(getPublicKey(nostrSecretKey))
                   return (<div class='align-bottom flex flex-row' onPointerDown={e => e.stopPropagation()}>
                     <Button
                       title={`remove ${option}`}
@@ -339,7 +309,6 @@ const Consortia = (props: {
                         state.remove(option)
                       }}
                       label={option}
-                      
                     />
                   </div>
                 )}}
@@ -369,7 +338,6 @@ const Consortia = (props: {
             {(consortium) => (
               <Show when={`${consortium?.label}` != ''}>
                 <div class='flex justify-between'>
-                  {/* <div class='pt-2'>{consortium.trainLabels.join(', ').slice(0, 100)}</div> */}
                   <div class="flex justify-start">
                     <div class="flex justify-start">
                       <Button
@@ -398,56 +366,4 @@ const Consortia = (props: {
     </>
   );
 }
-
 export default Consortia
-
-//         <Combobox.Root<string>
-//         multiple
-//         options={props.trainLabels.map(trainLabel => trainLabel.id)}
-//         value={trainLabelValues()}
-//         onChange={setTrainLabelValues}
-//         onInputChange={onInputChange}
-//         onOpenChange={onOpenChange}
-//         placeholder="click label to remove..."
-//         itemComponent={props => (
-//           <Combobox.Item item={props.item} class='combobox__item w-200px bg-inherit'>
-//             <Combobox.ItemLabel>{props.item.rawValue}</Combobox.ItemLabel>
-//             <Combobox.ItemIndicator class="combobox__item-indicator">
-//               <CheckIcon />
-//             </Combobox.ItemIndicator>
-//           </Combobox.Item>
-//         )}
-//       >
-//         <Combobox.Control<string> 
-//           aria-label="Feeds"
-//           class="bg-white combobox__control" 
-//         >
-//         {state => (
-//           <> 
-//             <Combobox.Trigger class='border-none bg-transparent align-middle text-3xl transition-all hover-text-white hover:bg-black rounded-full'>
-//             &nbsp;+label&nbsp;
-//             </Combobox.Trigger>
-//             <div class='flex flex-row bg-white '>
-//               <For each={state.selectedOptions()}>
-//                 {option => (
-//                   <div class='align-bottom flex flex-row' onPointerDown={e => e.stopPropagation()}>
-//                     <Button
-//                       title={`remove ${option}`}
-//                       onClick={() => {
-//                         state.remove(option)
-//                       }}
-//                       label={option}
-//                     />
-//                   </div>
-//                 )}
-//               </For>
-//             </div>
-//           </>
-//         )}
-//       </Combobox.Control>
-//       <Combobox.Portal>
-//         <Combobox.Content class="combobox__content">
-//           <Combobox.Listbox class="combobox__listbox font-sans"/>
-//         </Combobox.Content>
-//       </Combobox.Portal>
-//       </Combobox.Root>

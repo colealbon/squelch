@@ -82,19 +82,6 @@ const NostrKeys = (props: {
     })
   };
 
-  function bytesToHex(byteArray: any[]) {
-    return Array.prototype.map.call(byteArray, function(byte) {
-      return ('0' + (byte & 0xFF).toString(16)).slice(-2);
-    }).join('');
-  }
-  function hexToBytes(hexString: string) {
-    var result = [];
-    for (var i = 0; i < hexString.length; i += 2) {
-      result.push(parseInt(hexString.substr(i, 2), 16));
-    }
-    return result;
-  }
-
   const handleClickAdd = () => {
     let nostrSecretKey = generatePrivateKey()
     let nsec = nip19.nsecEncode(nostrSecretKey)
@@ -134,23 +121,6 @@ const NostrKeys = (props: {
         ignore: false
       })
   }
-  // const ydoc = new Y.Doc()
-  // const ymap = ydoc.getMap()
-  // ymap.set('keyA', 'valueA')
-  
-  // // Create another Yjs document (simulating a remote user)
-  // // and create some conflicting changes
-  // const ydocRemote = new Y.Doc()
-  // const ymapRemote = ydocRemote.getMap()
-  // ymapRemote.set('keyB', 'valueB')
-  
-  // // Merge changes from remote
-  // const update = Y.encodeStateAsUpdate(ydocRemote)
-  // Y.applyUpdate(ydoc, update)
-  
-  // // Observe that the changes have merged
-  // console.log(ymap.toJSON()) // => { keyA: 'valueA', keyB: 'valueB' }
-
 
   return (
   <div class='fade-in'>
@@ -188,7 +158,6 @@ const NostrKeys = (props: {
               <div>submit</div>
             </Link.Root>
           </div>
-
         </div>
       </form>
       <h4 class="text-muted">Keys</h4>
@@ -249,29 +218,3 @@ export interface NostrKey {
   follow?: boolean;
   ignore?: boolean;
 }
-
-// const nostrClient = relayInit("ws://0.0.0.0:8080");
-// await nostrClient.connect();
-// const key = generatePrivateKey();
-
-// const roomId = await createNostrCRDTRoom(ydoc, nostrClient, key, "demo");
-
-// const yarray = ydoc.getArray("count");
-
-// observe changes of the sum
-// yarray.observe((event) => {
-//   // print updates when the data changes
-//   console.log("new sum: " + yarray.toArray().reduce((a, b) => a as number + b as number));
-// });
-
-// // add 1 to the sum
-// yarray.push([1]); // => "new sum: 1"
-
-// const nostrProvider = new NostrProvider(
-//   ydoc,
-//   nostrClient,
-//   key,
-//   roomId,
-//   "demo"
-// );
-// await nostrProvider.initialize();
