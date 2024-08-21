@@ -11,7 +11,6 @@ import { NavigationMenu } from "@kobalte/core/navigation-menu";
 
 export interface NavBarProps {
   toggleNav: () => void,
-  mutateRssPosts: () => void,
   setSelectedTrainLabel: (label: string) => void,
   checkedTrainLabels: () => TrainLabel[]
 }
@@ -19,7 +18,6 @@ export interface NavBarProps {
 export const NavBar: Component<NavBarProps> = (props) => {
   const handleClickNavLink = () => {
     props.toggleNav()
-    props.mutateRssPosts()
     props.setSelectedTrainLabel('')
   }
 

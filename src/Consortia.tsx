@@ -40,7 +40,7 @@ const Consortia = (props: {
     nostrKeys: NostrKey[];
     encryptionKeys: EncryptionKey[];
     nostrRelays: NostrRelay[];
-    nostrMessageKind: string;
+    // nostrMessageKind: string;
     // eslint-disable-next-line no-unused-vars
     putConsortium: (consortium?: Consortium) => void,
     // eslint-disable-next-line no-unused-vars
@@ -53,7 +53,7 @@ const Consortia = (props: {
   const [optionsEncryptionKeys, setOptionsEncryptionKeys] = createSignal<string[]>([]);
   const [optionsNpub, setOptionsNpub] = createSignal<string[]>([]);
 
-  const getNostrMessageKind = () => parseInt(props.nostrMessageKind)
+  const getNostrMessageKind = () => parseInt('9001')
 
 //   const onOpenChange = (isOpen: boolean, triggerMode?: Combobox.ComboboxTriggerMode) => {
 //     // Show all options on ArrowDown/ArrowUp and button click.
@@ -154,7 +154,8 @@ const Consortia = (props: {
         id: '',
         label: '',
         signerNpub: '',
-        memberPublicKeys: []
+        memberPublicKeys: [],
+
       }, valuesForSelectedConsortium))
     // setTrainLabelValues(valuesForSelectedFeed?.trainLabels as string[] || [''])
     setSignerNpub(valuesForSelectedConsortium?.signerNpub as string || '')
@@ -164,9 +165,8 @@ const Consortia = (props: {
     const signerNSec = props.nostrKeys.find(nostrKey => {
       return nostrKey.label || nostrKey.publicKey === signerNpub() 
     })?.secretKey
-    if (!signerNSec) {
-      return
-    }
+    if (signerNSec) {
+
     const {
       type,
       data
@@ -198,6 +198,7 @@ const Consortia = (props: {
     )
     group.patchValue({id: `${nostrCRDTCreateEventId}`});
   }
+  }
 
   return (
     <>
@@ -210,10 +211,8 @@ const Consortia = (props: {
           <TextInput name="label" control={group.controls.label} />
         </label>
         <Button
-          onClick={(event: Event) => {
-            event.preventDefault
+          onClick={() => {
             handleClickCreateRoom()
-            return false
           }}
          label="new nostr room"
         />
@@ -275,7 +274,7 @@ const Consortia = (props: {
 
       <Combobox.Root<string[]>
         multiple={true}
-        options={props.encryptionKeys.map((encryptionKey: {label?: string, publicKey: string}) => encryptionKey.label || encryptionKey.publicKey)}
+        options={[props.encryptionKeys.map((encryptionKey: {label?: string, publicKey: string}) => encryptionKey.label || encryptionKey.publicKey).flat()]}
         value={memberPublicKeys()}
         onChange={setMemberPublicKeys}
         onInputChange={onInputChangeEncryptionKeys}

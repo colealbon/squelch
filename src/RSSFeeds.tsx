@@ -16,12 +16,13 @@ import {
 } from "solid-forms";
 import { TextInput } from './components/TextInput'
 import { FaSolidCheck  as CheckIcon} from 'solid-icons/fa'
-import { RSSFeed, TrainLabel} from './db-fixture'
+import { RSSFeed, TrainLabel, Consortium} from './db-fixture'
 import { Button } from './components/Button'
 const RSSFeeds = (props: {
     rssFeeds: RSSFeed[],
     // nostrKeys: NostrKey[],
     trainLabels: TrainLabel[],
+    consortia: Consortium[],
     // eslint-disable-next-line no-unused-vars
     putFeed: (feed: RSSFeed) => void,
     // eslint-disable-next-line no-unused-vars
@@ -29,10 +30,11 @@ const RSSFeeds = (props: {
     handleFeedToggleChecked: any
   }) => {
   const [trainLabelValues, setTrainLabelValues] = createSignal([]);
+  const [consortiaValues, setConsortiaValues] = createSignal([]);
   const [npubValue, setNpubValue] = createSignal('');
   const filter = createFilter({ sensitivity: "base" });
   const [options, setOptions] = createSignal<string[]>();
-  const [optionsNpub, setOptionsNpub] = createSignal<string[]>();
+  const [optionsConsortia, setOptionsConsortia] = createSignal<string[]>();
 
   const onOpenChange = (isOpen: boolean, triggerMode?: Combobox.ComboboxTriggerMode) => {
     // Show all options on ArrowDown/ArrowUp and button click.
@@ -44,21 +46,23 @@ const RSSFeeds = (props: {
     setOptions(options()?.filter(option => filter.contains(option, value)));
   };
 
-  // const onOpenChangeNpub = (isOpen: boolean, triggerMode?: Combobox.ComboboxTriggerMode) => {
-  //   // Show all options on ArrowDown/ArrowUp and button click.
-  //   if (isOpen && triggerMode === "manual") {
-  //     setOptionsNpub(props.nostrKeys.map(nostrKey => nostrKey.publicKey))
-  //   }
-  // };
-  // const onInputChangeNpub = (value: string) => {
-  //   setOptionsNpub(optionsNpub()?.filter(option => !filter.contains(option, value)));
-  // };
+  const onOpenChangeConsortia = (isOpen: boolean, triggerMode?: Combobox.ComboboxTriggerMode) => {
+    // Show all options on ArrowDown/ArrowUp and button click.
+    if (isOpen && triggerMode === "manual") {
+      setOptionsConsortia(props.consortia.map(consortium => consortium.label || consortium.id));
+    }
+  };
+  const onInputChangeConsortia = (value: string) => {
+    console.log(value)
+    setOptionsConsortia(optionsConsortia()?.filter(option => filter.contains(option, value)));
+  };
 
   const group = createFormGroup({
     id: createFormControl(""),
     npub: createFormControl(""),
     checked: createFormControl(true),
-    trainLabels: createFormControl([])
+    trainLabels: createFormControl([]),
+    consortia: createFormControl([])
   });
 
   const onSubmit = async (event?: Event ) => {
@@ -76,7 +80,8 @@ const RSSFeeds = (props: {
         id:'',
         npub:'',
         checked:true,
-        trainLabels:['']
+        trainLabels:[''],
+        consortia:['']
       }, group.value))
       .filter(([, value]) => `${value}` !== '')
     )]
@@ -86,12 +91,14 @@ const RSSFeeds = (props: {
           id: '',
           npub: '',
           checked: true,
-          trainLabels: []
+          trainLabels: [],
+          consortia: []
         },
         ...newFeed
       }
       newFeedObj.trainLabels = trainLabelValues()
       newFeedObj.npub = npubValue()
+      newFeedObj.consortia = consortiaValues()
       if (newFeedObj.id === '') {
         return
       }
@@ -101,10 +108,12 @@ const RSSFeeds = (props: {
       id:'',
       npub:'',
       checked:true,
-      trainLabels: []
+      trainLabels: [],
+      consortia: []
     })
     setNpubValue('')
-    setTrainLabelValues([]) 
+    setTrainLabelValues([])
+    setConsortiaValues([])
   };
 
   const handleToggleChecked = (id: string, newVal: boolean) => {
@@ -135,7 +144,7 @@ const RSSFeeds = (props: {
 
   const handleClickFeed = (id: string) => {
     setTrainLabelValues([])
-    setOptionsNpub([])
+    setOptionsConsortia([])
     setNpubValue('')
     const valuesForSelectedFeed = props.rssFeeds
       .find(feedEdit => feedEdit['id'] === id)
@@ -143,9 +152,11 @@ const RSSFeeds = (props: {
         id:'',
         npub: '',
         checked:true,
-        trainLabels:[]
+        trainLabels:[],
+        consortia:[]
       }, valuesForSelectedFeed))
     setTrainLabelValues(valuesForSelectedFeed?.trainLabels as string[] || [''])
+    setConsortiaValues(valuesForSelectedFeed?.consortia as string[] || [''])
     setNpubValue(valuesForSelectedFeed?.npub as string || '')
   }
 
@@ -208,17 +219,17 @@ const RSSFeeds = (props: {
       </Combobox.Root>
 
       
-      {/* <Combobox.Root<string>
-        multiple={false}
-        options={props.nostrKeys}
-        value={npubValue()}
-        onChange={setNpubValue}
-        onInputChange={onInputChangeNpub}
-        onOpenChange={onOpenChangeNpub}
-        placeholder="click label to remove..."
+      <Combobox.Root<string>
+        multiple
+        options={props.consortia.map(consortium => consortium.label || consortium.id)}
+        value={consortiaValues()}
+        onChange={setConsortiaValues}
+        onInputChange={onInputChangeConsortia}
+        onOpenChange={onOpenChangeConsortia}
+        placeholder="click cortium to remove..."
         itemComponent={props => (
-          <Combobox.Item item={props.item} class='combobox__item w-200px'>
-            <Combobox.ItemLabel>{props.item.label || props.item.pubKey}</Combobox.ItemLabel>
+          <Combobox.Item item={props.item} class='combobox__item w-200px bg-inherit'>
+            <Combobox.ItemLabel>{props.item.rawValue}</Combobox.ItemLabel>
             <Combobox.ItemIndicator class="combobox__item-indicator">
               <CheckIcon />
             </Combobox.ItemIndicator>
@@ -226,13 +237,13 @@ const RSSFeeds = (props: {
         )}
       >
         <Combobox.Control<string> 
-          aria-label="nPub"
+          aria-label="Feeds"
           class="bg-white combobox__control" 
         >
         {state => (
           <> 
             <Combobox.Trigger class='border-none bg-transparent align-middle text-3xl transition-all hover-text-white hover:bg-black rounded-full'>
-              &nbsp;+npub&nbsp;
+              &nbsp;+consortium&nbsp;
             </Combobox.Trigger>
             <div class='flex flex-row bg-white '>
               <For each={state.selectedOptions()}>
@@ -257,7 +268,9 @@ const RSSFeeds = (props: {
           <Combobox.Listbox class="combobox__listbox font-sans"/>
         </Combobox.Content>
       </Combobox.Portal>
-      </Combobox.Root> */}
+      </Combobox.Root>
+
+
       <div />
       <Button
         title='submit'

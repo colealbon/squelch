@@ -2,18 +2,13 @@ import Dexie, { Table } from "dexie";
 import { NostrKey } from './NostrKeys'
 import { EncryptionKey } from './EncryptionKeys'
 import { NostrRelay } from './NostrRelays'
-
-export interface Classifier {
-  "id": string,
-  "thresholdSuppressOdds"?: string
-  "model": string
-}
-
+import { Classifier } from './Classifiers'
 export interface RSSFeed {
     "id": string,
     "npub": string,
     "checked": boolean,
-    "trainLabels": string[]
+    "trainLabels": string[],
+    "consortia": string[]
 }
 
 export interface CorsProxy {
@@ -72,6 +67,17 @@ export class DbFixture extends Dexie {
     this.version(4).stores({
       nostrkeys: "&publicKey",
       rssfeeds: "&id, npub, checked, *trainLabels",
+      corsproxies: "&id",
+      trainlabels: "&id",
+      classifiers: "&id",
+      processedposts: "&id",
+      nostrrelays: "&id",
+      consortia: "&id, label, signerNpub, *memberPublicKeys",
+      encryptionkeys: "&publicKey, privateKey, label"
+    })
+    this.version(5).stores({
+      nostrkeys: "&publicKey",
+      rssfeeds: "&id, npub, checked, *trainLabels, *consortia",
       corsproxies: "&id",
       trainlabels: "&id",
       classifiers: "&id",

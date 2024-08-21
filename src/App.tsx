@@ -22,11 +22,10 @@ import Payment from './Payment'
 import Contact from './Contact'
 import NostrRelays from './NostrRelays'
 import NostrKeys, { NostrKey } from './NostrKeys'
-import Classifiers from './Classifiers'
+import Classifiers, {Classifier} from './Classifiers'
 import TrainLabels from './TrainLabels'
 import NostrPosts from './NostrPosts'
 import Consortia from './Consortia'
-import Prompt from './Prompt'
 import EncryptionKeys, { EncryptionKey } from './EncryptionKeys'
 import defaultMetadata from './defaultMetadata'
 import defaultCorsProxies from './defaultCorsProxies'
@@ -39,26 +38,20 @@ import defaultConsortia from './defaultConsortia'
 import defaultEncryptionKeys from './defaultEncryptionKeys'
 import {
   DbFixture,
-  NostrRelay,
   TrainLabel,
   RSSFeed,
   CorsProxy,
-  Classifier,
   Consortium
 } from "./db-fixture"
+import { NostrRelay } from './NostrRelays'
 import {
   prepNLPTask,
-  shortUrl,
   createStoredSignal,
   applyPrediction,
-  parsePosts,
-  fetchRssPosts,
-  htmlInnerText,
   similarity,
   fetchNostrPosts,
   prePrepNostrPosts,
-  prepNostrPost,
-  scoreRSSPosts
+  prepNostrPost
 } from './util'
 import * as Y from 'yjs'
 import * as buffer from 'buffer';
@@ -86,10 +79,7 @@ const App: Component = () => {
   const [albyTokenReadInvoice, setAlbyTokenReadInvoice] = createStoredSignal('albyTokenReadInvoice', '')
   const [selectedTrainLabel, setSelectedTrainLabel] = createStoredSignal('selectedTrainLabel', '')
   const [selectedMetadata, setSelectedMetadata] = createStoredSignal('selectedMetadata', {title:'', description:'', keywords: ''})
-  const [parsedRSSPosts, setParsedRSSPosts] = createSignal('')
-  const [preppedRSSPosts, setPreppedRSSPosts] = createSignal('')
-  const [dedupedRSSPosts, setDedupedRSSPosts] = createSignal('')
-  const [scoredRSSPosts, setScoredRSSPosts] = createSignal('')
+
   const [prePrepedNostrPosts, setPrePrepedNostrPosts] = createSignal('')
   const [prepedNostrPosts, setPrepedNostrPosts] = createSignal('')
   const [dedupedNostrPosts, setDedupedNostrPosts] = createSignal('')
@@ -173,108 +163,6 @@ const App: Component = () => {
       feedsForTrainLabel: feedsForTrainLabel,
       corsProxies: corsProxyList
     }))
-  })
-
-  createEffect(() => {
-    if (dedupedRSSPosts() == '') {
-      return
-    }
-    const suppressOdds: number = parseFloat(classifiers.find((classifierEntry) => classifierEntry?.id == selectedTrainLabel())?.thresholdSuppressOdds || '999')
-    const winkClassifier = WinkClassifier()
-    winkClassifier.definePrepTasks( [ prepNLPTask ] )
-    winkClassifier.defineConfig( { considerOnlyPresence: true, smoothingFactor: 0.5 } )
-    const classifierModel: string = classifiers.find((classifierEntry: any) => classifierEntry?.id == selectedTrainLabel())?.model || ''
-    if (classifierModel != '') {
-      winkClassifier.importJSON(classifierModel)
-    }
-    const RSSPosts = JSON.parse(dedupedRSSPosts())
-    const newScoredRSSPosts = scoreRSSPosts(RSSPosts, winkClassifier)
-      .sort((a: any, b: any) => (a.prediction.suppress > b.prediction.suppress) ? 1 : -1)
-      .filter((post: {
-        prediction: {
-          promote: number
-        }
-      }) => {
-        if (`${selectedTrainLabel}` == '') {
-          return true
-        }
-        if (suppressOdds == undefined ) {
-          return true
-        }
-        if (post.prediction.promote == undefined) {
-          return true
-        }
-        return post.prediction.promote >= suppressOdds * -1
-      })
-      setScoredRSSPosts(JSON.stringify(newScoredRSSPosts))
-  })
-  createEffect(() => {
-    if (preppedRSSPosts() == '') {
-      return
-    }
-    const newDedupedRSSPosts = JSON.parse(preppedRSSPosts())
-    .filter((postItem: any) => {
-      const processedPostsID = postItem.feedLink === "" ? postItem.guid : shortUrl(postItem.feedLink)
-      const processedPostsForFeedLink = yProcessedPosts.get(processedPostsID) as Array<string>
-      if (processedPostsForFeedLink == undefined) { 
-        return true
-      }
-      return !processedPostsForFeedLink.find((processedPost: string) => {
-        // todo do not hardcode .8, use some statistics - or understand how .8 is derived from stats
-        return similarity(
-          `${processedPost}`,
-          `${postItem.mlText}`
-        ) > 0.8
-      })
-    })
-    setDedupedRSSPosts(JSON.stringify(newDedupedRSSPosts))
-  })
-  createEffect(() => {
-    if (`${parsedRSSPosts()}` === '') {
-      return
-    }
-    const newPreppedRSSPosts = JSON.parse(parsedRSSPosts()).flat() && JSON.parse(parsedRSSPosts()).flat()
-      .filter((post: {mlText: string}) => post && `${post.mlText}`.trim() != '')
-      .filter((post: {postTitle: string}) => {
-        return post.postTitle != null
-      })
-      .map((post: {postTitle: string})  => {
-        return {
-          ...post,
-          postTitle: htmlInnerText(post?.postTitle)
-        }
-      })
-      .filter((post: {
-        feedLink?: string,
-        guid: string
-      }) => post?.feedLink || post?.guid != null)
-    setPreppedRSSPosts(JSON.stringify(newPreppedRSSPosts))
-  })
-    
-  createEffect(() => {
-    if (fetchedRSSPosts() == undefined) {
-      return
-    }
-    try {
-      if (!JSON.parse(fetchedRSSPosts() as string)) {
-        return
-      }
-    } catch {
-      return
-    }
-    const fetchedRSSPostsStr: string = fetchedRSSPosts() as unknown as string
-    if (fetchedRSSPostsStr === '') {
-      return
-    }
-    const fetchedPostsArr = JSON.parse(fetchedRSSPostsStr)
-    parsePosts(fetchedPostsArr)
-    .then((newParsedPosts) => {
-        if ([newParsedPosts?.flat()].length === 0) {
-          return
-        }
-      const newParsedPostsStr: string = JSON.stringify(newParsedPosts)
-      setParsedRSSPosts(newParsedPostsStr)
-    })
   })
 
   createEffect(() => {
@@ -473,7 +361,7 @@ const App: Component = () => {
   // const processedPostsWebRtcProvider = processedPostsRoomId() != '' ? new WebrtcProvider(processedPostsRoomId(), ydocProcessedPosts, { signaling: ['wss://fictionmachine.io/websocket'] }) : ''
   const processedPostsIndexeDBProvider = new IndexeddbPersistence('processedposts', ydocProcessedPosts)
   const yProcessedPosts = ydocProcessedPosts.getMap()
- 
+
   yProcessedPosts.observeDeep(event => {
     // console.log(event)
   })
@@ -498,8 +386,6 @@ const App: Component = () => {
   })
 
   const [fetchedNostrPosts] = createResource(nostrQuery, fetchNostrPosts)
-
-  const [fetchedRSSPosts, {mutate: mutateRssPosts}] = createResource(fetchRssParams, fetchRssPosts)
   
   const toggleNav = () => setNavIsOpen(!navIsOpen())
 
@@ -514,12 +400,6 @@ const App: Component = () => {
           <span>
             <NavBar
                 toggleNav={() => toggleNav()}
-                mutateRssPosts={() => {
-                  setDedupedRSSPosts('')
-                  setScoredRSSPosts('')
-                  mutateRssPosts(() => [])
-                  
-                }}
                 setSelectedTrainLabel={(newLabel: string) => setSelectedTrainLabel(newLabel)}
                 checkedTrainLabels={() => checkedTrainLabels}
               />
@@ -555,22 +435,23 @@ const App: Component = () => {
                 const RSSFeeds = lazy(() => import("./RSSFeeds"))
                 return <RSSFeeds
                   rssFeeds={rssFeeds}
+                  consortia={consortia}
                   putFeed={putRSSFeed}
                   removeFeed={removeRSSFeed}
                   trainLabels={trainLabels}
                   handleFeedToggleChecked={(id: string) => handleFeedToggleChecked(id)}
+                  
                 />
               }}/>
               <Route path='/consortia' component={() => {
                 const Consortia = lazy(() => import("./Consortia.tsx"))
                 return <Consortia
-                  consortia= {consortia}
+                  consortia = {consortia}
                   nostrKeys = {nostrKeys}
                   encryptionKeys = {encryptionKeys}
                   putConsortium = {putConsortium}
                   removeConsortium = {removeConsortium}
                   nostrRelays = {checkedNostrRelays}
-                  nostrMessageKind = '9001'
                 />
               }}/>
               <Route path='/rssposts' component={() => {
@@ -591,7 +472,9 @@ const App: Component = () => {
                     })
                   }}
                   markComplete={(postId: string, feedId: string) => markComplete(postId, feedId)}
-                  rssPosts={dedupedRSSPosts() && JSON.parse(dedupedRSSPosts())}
+                  fetchRssParams={fetchRssParams()}
+                  classifiers={classifiers}
+                  // rssPosts={dedupedRSSPosts() && JSON.parse(dedupedRSSPosts())}
                 />
               }} />
               <Route path='/' component={() => {
@@ -612,7 +495,9 @@ const App: Component = () => {
                     })
                   }}
                   markComplete={(postId: string, feedId: string) => markComplete(postId, feedId)}
-                  rssPosts={dedupedRSSPosts() && JSON.parse(dedupedRSSPosts())}
+                  fetchRssParams={fetchRssParams()}
+                  classifiers={classifiers}
+                  //rssPosts={dedupedRSSPosts() && JSON.parse(dedupedRSSPosts())}
                 />
               }} />
               <Route path='/rssposts/:trainlabel' component={() => {
@@ -633,8 +518,10 @@ const App: Component = () => {
                     })
                   }}
                   markComplete={(postId: string, feedId: string) => markComplete(postId, feedId)}
-                  rssPosts={scoredRSSPosts() && JSON.parse(scoredRSSPosts())}
+                  // rssPosts={scoredRSSPosts() && JSON.parse(scoredRSSPosts())}
                   setSelectedTrainLabel={setSelectedTrainLabel}
+                  fetchRssParams={fetchRssParams()}
+                  classifiers={classifiers}
                 />
               }} />
               <Route path='/rssposts/:trainlabel/:model' component={() => {
@@ -655,13 +542,8 @@ const App: Component = () => {
                     })
                   }}
                   markComplete={(postId: string, feedId: string) => markComplete(postId, feedId)}
-                  rssPosts={scoredRSSPosts() && JSON.parse(scoredRSSPosts())}
-                  setSelectedTrainLabel={setSelectedTrainLabel}
-                />
-              }} />
-              <Route path='/prompt/:trainlabel' component={() => {
-                return <Prompt
-                  rssPosts={scoredRSSPosts() && JSON.parse(scoredRSSPosts())}
+                  fetchRssParams={fetchRssParams()}
+                  classifiers={classifiers}
                   setSelectedTrainLabel={setSelectedTrainLabel}
                 />
               }} />
@@ -695,6 +577,9 @@ const App: Component = () => {
               <Route path='/consortia' component={() => <Consortia 
                 consortia={consortia}
                 nostrKeys={nostrKeys}
+                encryptionKeys={encryptionKeys}
+                nostrRelays={nostrRelays}
+                // nostrMessageKind={nostrMessageKind}
                 putConsortium={putConsortium}
                 removeConsortium={removeConsortium}
                 />} />

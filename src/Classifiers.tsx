@@ -20,7 +20,7 @@ import { TextInput } from './components/TextInput'
 import {
   VsCopy
 } from 'solid-icons/vs'
-import { Classifier } from './db-fixture'
+
 import { PageHeader } from './components/PageHeader'
 import { Button } from './components/Button'
 
@@ -212,4 +212,11 @@ const Classifiers = (props: {
   </div>
   )
 }
+
+export interface Classifier {
+  "id": string,
+  "thresholdSuppressOdds"?: string
+  "model": string
+}
+
 export default Classifiers;

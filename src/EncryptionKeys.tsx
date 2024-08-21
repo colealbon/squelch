@@ -36,7 +36,6 @@ const EncryptionKeys = (props: {
       console.log('already submitted')
       return;
     }
-    console.log('onSubmit')
     const submitted = Object.fromEntries(
       Object.entries(Object.assign({
         publicKey:'',
@@ -55,16 +54,8 @@ const EncryptionKeys = (props: {
       publicKey:'',
       secretKey:'',
       label:''
-  })
-
+    })
   };
-  function hexToBytes(hexString: string) {
-    var result = [];
-    for (var i = 0; i < hexString.length; i += 2) {
-      result.push(parseInt(hexString.substr(i, 2), 16));
-    }
-    return result;
-  }
   const handleEncryptionKeyClick = (publicKey: string) => {
     const valuesForSelectedKey = props.encryptionKeys
       .find(encryptionKeyEdit => encryptionKeyEdit['publicKey'] === publicKey)
@@ -82,32 +73,16 @@ const EncryptionKeys = (props: {
         label:''
     })
   }
-  // const ydoc = new Y.Doc()
-  // const ymap = ydoc.getMap()
-  // ymap.set('keyA', 'valueA')
-  
-  // // Create another Yjs document (simulating a remote user)
-  // // and create some conflicting changes
-  // const ydocRemote = new Y.Doc()
-  // const ymapRemote = ydocRemote.getMap()
-  // ymapRemote.set('keyB', 'valueB')
-  
-  // // Merge changes from remote
-  // const update = Y.encodeStateAsUpdate(ydocRemote)
-  // Y.applyUpdate(ydoc, update)
-  
-  // // Observe that the changes have merged
-  // console.log(ymap.toJSON()) // => { keyA: 'valueA', keyB: 'valueB' }
 
   return (
   <div class='fade-in'>
     <PageHeader>Encryption Keys</PageHeader>
     <div>
       <form onSubmit={onSubmit}>
-        <label for="publicKey">Public Key</label>
-        <TextInput name="publicKey" control={group.controls.publicKey} />
-        <label for="secretKey">Secret Key</label>
-        <TextInput name="secretKey" control={group.controls.secretKey} />
+        <label for="publicEncryptionKey">Public Key</label>
+        <TextInput name="publicEncryptiohKey" control={group.controls.publicKey} />
+        <label for="secretEncryptionKey">Secret Key</label>
+        <TextInput name="secretEncryptionKey" control={group.controls.secretKey} />
         <div color='orange'>(Not secure - do not paste sensitive keys)</div>
         <label for="label">Label</label>
         <TextInput name="label" control={group.controls.label} />
@@ -180,29 +155,3 @@ export interface EncryptionKey {
   secretKey?: string;
   label?: string;
 }
-
-// const nostrClient = relayInit("ws://0.0.0.0:8080");
-// await nostrClient.connect();
-// const key = generatePrivateKey();
-
-// const roomId = await createNostrCRDTRoom(ydoc, nostrClient, key, "demo");
-
-// const yarray = ydoc.getArray("count");
-
-// observe changes of the sum
-// yarray.observe((event) => {
-//   // print updates when the data changes
-//   console.log("new sum: " + yarray.toArray().reduce((a, b) => a as number + b as number));
-// });
-
-// // add 1 to the sum
-// yarray.push([1]); // => "new sum: 1"
-
-// const nostrProvider = new NostrProvider(
-//   ydoc,
-//   nostrClient,
-//   key,
-//   roomId,
-//   "demo"
-// );
-// await nostrProvider.initialize();

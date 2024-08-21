@@ -179,30 +179,6 @@ const defaultRSSFeeds =
     "checked": false,
     "trainLabels": ["variety"],
     "npub": ""
-  },
-  {
-    "id": "https://njump.me/npub1q6mcr8tlr3l4gus3sfnw6772s7zae6hqncmw5wj27ejud5wcxf7q0nx7d5.rss",
-    "checked": false,
-    "trainLabels": ["shadowysupercoders"],
-    "npub": ""
-  },
-  {
-    "id": "https://njump.me/npub1l2vyh47mk2p0qlsku7hg0vn29faehy9hy34ygaclpn66ukqp3afqutajft.rss",
-    "checked": false,
-    "trainLabels": ["shadowysupercoders"],
-    "npub": ""
-  },
-  {
-    "id": "https://njump.me/npub1gcxzte5zlkncx26j68ez60fzkvtkm9e0vrwdcvsjakxf9mu9qewqlfnj5z.rss",
-    "checked": false,
-    "trainLabels": ["shadowysupercoders"],
-    "npub": ""
-  },
-  {
-    "id": "https://njump.me/npub1c0le4pgu49j76fnt54xfyclkszlfrcjx2c5vvjatdfvey5sat3ws76lcvg.rss",
-    "checked": false,
-    "trainLabels": ["shadowysupercoders"],
-    "npub": ""
   }
 ]
 export default defaultRSSFeeds
