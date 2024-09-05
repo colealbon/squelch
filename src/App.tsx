@@ -39,11 +39,11 @@ import defaultEncryptionKeys from './defaultEncryptionKeys'
 import {
   DbFixture,
   TrainLabel,
-  RSSFeed,
-  CorsProxy,
   Consortium
 } from "./db-fixture"
+import { CorsProxy } from './CorsProxies'
 import { NostrRelay } from './NostrRelays'
+import { RSSFeed } from './RSSFeeds'
 import {
   prepNLPTask,
   createStoredSignal,

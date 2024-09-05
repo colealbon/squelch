@@ -317,3 +317,10 @@ const RSSFeeds = (props: {
 }
 
 export default RSSFeeds
+export interface RSSFeed {
+  "id": string,
+  "npub": string,
+  "checked": boolean,
+  "trainLabels": string[],
+  "consortia": string[]
+}

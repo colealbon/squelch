@@ -2,7 +2,7 @@ import {
   Separator,
   Button
 } from "@kobalte/core";
-import { CorsProxy } from './db-fixture'
+
 import { For } from 'solid-js'
 import {
   createFormGroup,
@@ -102,3 +102,7 @@ const CorsProxies = (props: {
   )
 }
 export default CorsProxies;
+export interface CorsProxy {
+  "id": string,
+  "checked": boolean
+  }

@@ -3,6 +3,7 @@ import { NostrKey } from './NostrKeys'
 import { EncryptionKey } from './EncryptionKeys'
 import { NostrRelay } from './NostrRelays'
 import { Classifier } from './Classifiers'
+import { CorsProxy } from './CorsProxies'
 export interface RSSFeed {
     "id": string,
     "npub": string,
@@ -11,10 +12,6 @@ export interface RSSFeed {
     "consortia": string[]
 }
 
-export interface CorsProxy {
-  "id": string,
-  "checked": boolean
-}
 export interface TrainLabel {
   "id": string,
   "checked": boolean

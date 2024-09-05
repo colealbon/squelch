@@ -230,7 +230,7 @@ const Posts = (props: {
           feedLink?: string,
           guid?: string
         }) => {
-          const processedPostsID = `${post.feedLink}` === "" ? shortGuid(post.guid) : shortUrl(`${post.feedLink}`)
+          const processedPostsID = `${post.feedLink}` === "" ? shortGuid(`${post.guid}`) : shortUrl(`${post.feedLink}`)
           return processedPostsID !== undefined
         })}                       
         fallback={

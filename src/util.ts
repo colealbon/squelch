@@ -5,7 +5,7 @@ import { XMLParser } from 'fast-xml-parser'
 import type { Signal } from 'solid-js';
 import { createSignal } from 'solid-js';
 import axios from 'axios';
-import { RSSFeed } from "./db-fixture";
+import { RSSFeed } from "./RSSFeeds";
 import winkSimilarity from 'wink-nlp/utilities/similarity';
 import { NostrFetcher } from "nostr-fetch"
 import WinkClassifier from 'wink-naive-bayes-text-classifier'
